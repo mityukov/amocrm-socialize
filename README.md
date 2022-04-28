@@ -1,4 +1,4 @@
-# Auth0
+# amoCRM
 
 ```bash
 composer require socialiteproviders/amocrm
