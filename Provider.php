@@ -3,22 +3,25 @@
 namespace SocialiteProviders\AmoCRM;
 
 use GuzzleHttp\RequestOptions;
-use SocialiteProviders\Manager\OAuth2\User;
+use InvalidArgumentException;
 use SocialiteProviders\Manager\OAuth2\AbstractProvider;
+use SocialiteProviders\Manager\OAuth2\User;
 
 class Provider extends AbstractProvider
 {
     /**
      * Unique Provider Identifier.
      */
-    const IDENTIFIER = 'AMOCRM';
+    public const IDENTIFIER = 'AMOCRM';
 
     /**
+     * Get the base URL.
+     *
      * @return string
      */
-    protected function getBaseAmoUrl()
+    protected function getBaseUrl()
     {
-        return "https://www.amocrm.{$this->getConfig('domain')}";
+        return sprintf('https://www.amocrm.%s', $this->getTld());
     }
 
     /**
@@ -26,7 +29,25 @@ class Provider extends AbstractProvider
      */
     public static function additionalConfigKeys()
     {
-        return ['domain'];
+        return ['tld'];
+    }
+
+    /**
+     * Get the TLD config value.
+     *
+     * @throws \InvalidArgumentException
+     *
+     * @return string
+     */
+    public function getTld()
+    {
+        $tld = strtolower(ltrim($this->getConfig('tld', 'ru'), '.'));
+
+        if (!in_array($tld, ['com', 'ru'], true)) {
+            throw new InvalidArgumentException('Invalid TLD value.');
+        }
+
+        return $tld;
     }
 
     /**
@@ -34,7 +55,7 @@ class Provider extends AbstractProvider
      */
     protected function getAuthUrl($state)
     {
-        return $this->buildAuthUrlFromBase("{$this->getBaseAmoUrl()}/oauth", $state);
+        return $this->buildAuthUrlFromBase("{$this->getBaseUrl()}/oauth", $state);
     }
 
     /**
@@ -42,7 +63,7 @@ class Provider extends AbstractProvider
      */
     protected function getTokenUrl()
     {
-        $domain = request('referer');
+        $domain = $this->request->get('referer');
 
         return "https://{$domain}/oauth2/access_token";
     }
@@ -52,18 +73,19 @@ class Provider extends AbstractProvider
      */
     protected function getUserByToken($token)
     {
-        $domain = request('referer');
+        $domain = $this->request->get('referer');
 
-        $response = $this->getHttpClient()->get("https://{$domain}/api/v4/account", [
+        $response = $this->getHttpClient()->get("https://$domain/api/v4/account", [
             RequestOptions::HEADERS => [
-                'Authorization' => 'Bearer ' . $token,
+                'Authorization' => 'Bearer '.$token,
             ],
         ]);
 
         $account = json_decode((string) $response->getBody(), true);
-        $response = $this->getHttpClient()->get("https://{$domain}/api/v4/users/{$account['current_user_id']}", [
+
+        $response = $this->getHttpClient()->get("https://$domain/api/v4/users/{$account['current_user_id']}", [
             RequestOptions::HEADERS => [
-                'Authorization' => 'Bearer ' . $token,
+                'Authorization' => 'Bearer '.$token,
             ],
         ]);
 
@@ -76,10 +98,10 @@ class Provider extends AbstractProvider
     protected function mapUserToObject(array $user)
     {
         return (new User())->setRaw($user)->map([
-            'id' => $user['id'],
-            'name' => $user['name'],
+            'id'       => $user['id'],
+            'name'     => $user['name'],
             'nickname' => $user['email'],
-            'email' => $user['email'],
+            'email'    => $user['email'],
         ]);
     }
 }
