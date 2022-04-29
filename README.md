@@ -1,10 +1,21 @@
 # amoCRM
 
+## Installation & Basic Usage
+
+Step 0 (may become obsolete in a few days): add the following section to your composer.json:
+```json
+    "repositories": [
+        {
+            "type": "vcs",
+            "url": "git@github.com:mityukov/amocrm-socialize"
+        }
+    ],
+```
+(e.g., right after "require-dev" one)
+
 ```bash
 composer require socialiteproviders/amocrm
 ```
-
-## Installation & Basic Usage
 
 Please see the [Base Installation Guide](https://socialiteproviders.com/usage/), then follow the provider specific instructions below.
 
